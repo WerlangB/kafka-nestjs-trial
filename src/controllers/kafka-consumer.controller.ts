@@ -1,7 +1,7 @@
 import { Controller, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 
-@Controller()
+@Controller('kafka-consumer')
 export class KafkaConsumerController {
   private readonly logger = new Logger(KafkaConsumerController.name);
 

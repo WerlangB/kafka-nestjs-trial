@@ -11,18 +11,26 @@ export class KafkaJsService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     await this.producer.connect();
     await this.consumer.connect();
-    await this.consumer.subscribe({ topic: 'test-topic', fromBeginning: true });
+    // Consumindo dois tópicos
+    await this.consumer.subscribe({ topic: 'topic-1', fromBeginning: true });
+    await this.consumer.subscribe({ topic: 'topic-2', fromBeginning: true });
     this.consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
-        this.logger.log(`Mensagem recebida: ${message.value?.toString()}`);
+        this.logger.log(
+          `Tópico: ${topic} | Partição: ${partition} | Mensagem: ${message.value?.toString()}`
+        );
+        // Exemplo: processar só mensagens da partição 0 de topic-1
+        if (topic === 'topic-1' && partition === 0) {
+          this.logger.log('Processando mensagem da partição 0 de topic-1');
+        }
       },
     });
   }
 
-  async sendMessage(message: string) {
+  async sendMessage(message: string, topic = 'topic-1', partition?: number) {
     await this.producer.send({
-      topic: 'test-topic',
-      messages: [{ value: message }],
+      topic,
+      messages: [partition !== undefined ? { value: message, partition } : { value: message }],
     });
   }
 
