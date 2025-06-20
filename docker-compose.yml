@@ -36,7 +36,7 @@ services:
     environment:
      - CONNECT_BOOTSTRAP_SERVERS=broker:29092
      - CONNECT_GROUP_ID=kconnect
-     - CONNECT_PLUGIN_PATH=/data/plugins
+     - CONNECT_PLUGIN_PATH=/custom-plugins
      - CONNECT_CLIENT_ID=kconnect
      - CONNECT_CONFIG_STORAGE_TOPIC=_kconnect-configs
      - CONNECT_OFFSET_STORAGE_TOPIC=_kconnect-offsets
@@ -55,7 +55,7 @@ services:
      - CONNECT_VALUE_CONVERTER=org.apache.kafka.connect.storage.StringConverter
      - KAFKA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     volumes:
-     - "./data:/data/"
+     - "./kafka-plugins:/custom-plugins"
     healthcheck:
       disable: true
     depends_on:
@@ -78,3 +78,9 @@ services:
      - kconnect
     ports:
       - 8080:8080
+  
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: 123
