@@ -1,4 +1,3 @@
-version: '2'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.2.1
@@ -29,14 +28,14 @@ services:
       CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
 
   kconnect:
-    image: confluentinc/cp-kafka-connect:6.2.4
+    image: confluentinc/cp-kafka-connect:7.2.1
     ports:
      - 8083:8083
      - 5005:5005
     environment:
      - CONNECT_BOOTSTRAP_SERVERS=broker:29092
      - CONNECT_GROUP_ID=kconnect
-     - CONNECT_PLUGIN_PATH=/custom-plugins
+     - CONNECT_PLUGIN_PATH=/usr/share/java,/usr/share/confluent-hub-components
      - CONNECT_CLIENT_ID=kconnect
      - CONNECT_CONFIG_STORAGE_TOPIC=_kconnect-configs
      - CONNECT_OFFSET_STORAGE_TOPIC=_kconnect-offsets
@@ -54,8 +53,8 @@ services:
      - CONNECT_KEY_CONVERTER=org.apache.kafka.connect.storage.StringConverter
      - CONNECT_VALUE_CONVERTER=org.apache.kafka.connect.storage.StringConverter
      - KAFKA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
-    volumes:
-     - "./kafka-plugins:/custom-plugins"
+    # volumes:
+     # - "./kafka-plugins:/custom-plugins"
     healthcheck:
       disable: true
     depends_on:
@@ -82,5 +81,7 @@ services:
   db:
     image: postgres
     restart: always
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_PASSWORD: 123

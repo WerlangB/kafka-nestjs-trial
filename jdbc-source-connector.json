@@ -1,0 +1,16 @@
+{
+  "name": "postgres-source-connector",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+    "connection.url": "jdbc:postgresql://db:5432/postgres",
+    "connection.user": "postgres",
+    "connection.password": "123",
+    "table.whitelist": "users",
+    "mode": "timestamp",
+    "timestamp.column.name": "created_at",
+    "topic.prefix": "postgres-",
+    "poll.interval.ms": 10000,
+    "tasks.max": 1,
+    "validate.non.null": false
+  }
+}
