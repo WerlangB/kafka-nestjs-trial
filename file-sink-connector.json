@@ -1,0 +1,8 @@
+{
+  "name": "mock-sink-connector",
+  "config": {
+    "connector.class": "org.apache.kafka.connect.tools.MockSinkConnector",
+    "topics": "postgres-users",
+    "tasks.max": 1
+  }
+}

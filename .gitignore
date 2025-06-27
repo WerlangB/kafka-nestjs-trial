@@ -134,3 +134,17 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Java/Maven specific
+target/
+*.class
+
+# Camel output files
+camel-output/
+
+# Docker volumes
+postgres_data/
+
+# IDE files
+.idea/
+*.iml

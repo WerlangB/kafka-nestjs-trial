@@ -53,12 +53,21 @@ services:
      - CONNECT_KEY_CONVERTER=org.apache.kafka.connect.storage.StringConverter
      - CONNECT_VALUE_CONVERTER=org.apache.kafka.connect.storage.StringConverter
      - KAFKA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
-    # volumes:
-     # - "./kafka-plugins:/custom-plugins"
     healthcheck:
       disable: true
     depends_on:
      - broker
+
+  camel-consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile.camel
+    container_name: camel-kafka-consumer
+    volumes:
+      - ./camel-output:/tmp/output
+    depends_on:
+      - broker
+    restart: unless-stopped
 
   akhq:
     image: tchiotludo/akhq
@@ -79,9 +88,16 @@ services:
       - 8080:8080
   
   db:
-    image: postgres
+    image: postgres:13
     restart: always
     ports:
       - "5432:5432"
     environment:
       POSTGRES_PASSWORD: 123
+      POSTGRES_DB: testdb
+      POSTGRES_USER: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

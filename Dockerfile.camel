@@ -1,0 +1,23 @@
+FROM openjdk:17-jdk-slim
+
+# Install Maven
+RUN apt-get update && \
+    apt-get install -y wget && \
+    wget https://archive.apache.org/dist/maven/maven-3/3.8.6/binaries/apache-maven-3.8.6-bin.tar.gz && \
+    tar -xzf apache-maven-3.8.6-bin.tar.gz && \
+    mv apache-maven-3.8.6 /opt/maven && \
+    rm apache-maven-3.8.6-bin.tar.gz
+
+ENV PATH="/opt/maven/bin:${PATH}"
+
+WORKDIR /app
+
+# Copy project files
+COPY pom.xml .
+COPY src ./src
+
+# Build project and download dependencies
+RUN mvn clean compile dependency:copy-dependencies
+
+# Command to run
+CMD ["java", "-cp", "target/classes:target/dependency/*", "CamelKafkaConsumer"]

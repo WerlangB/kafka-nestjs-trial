@@ -1,0 +1,14 @@
+{
+  "name": "postgres-sink-connector", 
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+    "connection.url": "jdbc:postgresql://db:5432/postgres",
+    "connection.user": "postgres",
+    "connection.password": "123",
+    "topics": "postgres-users",
+    "table.name.format": "kafka_messages",
+    "auto.create": true,
+    "auto.evolve": true,
+    "tasks.max": 1
+  }
+}
