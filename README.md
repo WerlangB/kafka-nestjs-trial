@@ -1,4 +1,4 @@
-# Kafka NestJS Trial
+# Trying Kafka with NestJs, PostgreSQL e Apache Camel
 
 <p align="center">
   <img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" />
@@ -6,17 +6,20 @@
 
 ## Description
 
-This project is a practical example of integrating [NestJS](https://nestjs.com/) with Apache Kafka using [kafkajs](https://kafka.js.org/). It demonstrates how to produce and consume messages across multiple topics and partitions, includes PostgreSQL integration for data persistence, and exposes HTTP endpoints documented with Swagger for easy testing and integration.
+This project is a comprehensive example of integrating [NestJS](https://nestjs.com/) with Apache Kafka using [kafkajs](https://kafka.js.org/), and includes an [Apache Camel](https://camel.apache.org/) consumer for advanced message processing. It demonstrates how to produce and consume messages across multiple topics and partitions, includes PostgreSQL integration with Kafka Connect for data streaming, and features a custom Camel consumer that processes messages and writes them to files.
 
 ## Features
 - 🚀 Produce and consume Kafka messages via HTTP
 - 🗃️ PostgreSQL integration with Kafka Connect
-- 📊 Support for multiple topics and partitions
+- � Apache Camel consumer for advanced message processing
+- 📄 File output generation from Kafka messages
+- �📊 Support for multiple topics and partitions
 - 👥 Configurable consumer groups
 - 📖 Automatic API documentation with Swagger
 - 🐳 Complete Docker environment setup
 - 🔧 Kafka Connect with JDBC connectors
 - 📈 AKHQ web interface for Kafka monitoring
+- 🔄 JSON message processing and filtering
 
 ## Architecture
 
@@ -35,6 +38,17 @@ This project is a practical example of integrating [NestJS](https://nestjs.com/)
                         │      AKHQ       │
                         │   (Port 8080)   │
                         └─────────────────┘
+                                 │
+                        ┌─────────────────┐
+                        │ Apache Camel    │
+                        │   Consumer      │
+                        │  (Containerized)│
+                        └─────────────────┘
+                                 │
+                        ┌─────────────────┐
+                        │  Output Files   │
+                        │ (camel-output/) │
+                        └─────────────────┘
 ```
 
 ## Services Overview
@@ -47,6 +61,7 @@ This project is a practical example of integrating [NestJS](https://nestjs.com/)
 | **Kafka Connect** | 8083 | Data integration platform |
 | **AKHQ** | 8080 | Web UI for Kafka management |
 | **Zookeeper** | 2181 | Kafka coordination service |
+| **Camel Consumer** | - | File-based message processor |
 
 ## How to Run the Project
 
@@ -61,6 +76,7 @@ This will start all services:
 - ✅ PostgreSQL Database
 - ✅ Kafka Connect
 - ✅ AKHQ Web Interface
+- ✅ Apache Camel Consumer
 
 ### 2. Install project dependencies
 ```bash
@@ -82,6 +98,31 @@ http://localhost:3000/api
 **AKHQ Kafka Management:**
 ```
 http://localhost:8080
+```
+
+## Apache Camel Consumer
+
+The project includes a containerized Apache Camel consumer that:
+- 📥 Consumes messages from the `postgres-users` topic
+- 📄 Writes raw messages to `camel-output/kafka-messages.txt`
+- 🔍 Processes JSON messages and extracts user data
+- 📝 Writes filtered user data to `camel-output/processed-users.txt`
+
+### Camel Routes Configuration
+The consumer implements two routes:
+1. **Raw Message Route**: Saves all messages with timestamps
+2. **JSON Processing Route**: Filters messages containing email fields
+
+### Viewing Output Files
+```bash
+# View raw messages
+cat camel-output/kafka-messages.txt
+
+# View processed user data
+cat camel-output/processed-users.txt
+
+# Monitor files in real-time
+tail -f camel-output/*.txt
 ```
 
 ## Database Setup
@@ -162,6 +203,19 @@ curl http://localhost:8083/connectors/postgres-source-connector/status
 curl http://localhost:8083/connectors
 ```
 
+## Connector Configuration Files
+
+The project includes pre-configured connector templates:
+
+### JDBC Source Connector (`jdbc-source-connector.json`)
+Streams data from PostgreSQL `users` table to `postgres-users` topic.
+
+### JDBC Sink Connector (`postgres-sink-connector.json`)  
+Writes Kafka messages back to PostgreSQL tables.
+
+### File Sink Connector (`file-sink-connector.json`)
+Alternative file-based sink connector (requires FileStreamSink plugin).
+
 ## Folder Structure
 ```
 src/
@@ -176,9 +230,24 @@ src/
   main.ts              # Application bootstrap
   app.module.ts        # Main module
 
-kafka-plugins/         # Kafka Connect plugins
-docker-compose.yml     # Complete environment setup
-jdbc-source-connector.json  # JDBC connector configuration
+# Apache Camel Consumer
+src/main/java/
+    CamelKafkaConsumer.java      # Camel consumer implementation
+pom.xml                          # Maven dependencies
+Dockerfile.camel                 # Camel consumer Docker build
+
+# Configuration Files
+jdbc-source-connector.json       # JDBC source connector config
+postgres-sink-connector.json     # JDBC sink connector config
+file-sink-connector.json         # File sink connector config
+docker-compose.yml               # Complete environment setup
+
+# Output
+camel-output/                    # Camel consumer output files
+    kafka-messages.txt           # Raw messages with timestamps
+    processed-users.txt          # Processed JSON user data
+
+kafka-plugins/                   # Kafka Connect plugins (commented out)
 ```
 
 ## Environment Variables
@@ -217,6 +286,12 @@ DATABASE_PASSWORD=123
 - Check if ports are already in use: `netstat -tulpn | grep :PORT`
 - Modify port mappings in docker-compose.yml if needed
 
+**4. Camel consumer not processing messages**
+- Check if topic exists: `docker exec kafka-nestjs-trial-broker-1 kafka-topics --bootstrap-server localhost:9092 --list`
+- Verify consumer is running: `docker compose ps camel-consumer`
+- Check Camel logs: `docker compose logs camel-consumer`
+- Ensure output directory exists: `ls -la camel-output/`
+
 ### Logs Access
 ```bash
 # View all services logs
@@ -226,6 +301,34 @@ docker compose logs
 docker compose logs broker
 docker compose logs db
 docker compose logs kconnect
+docker compose logs camel-consumer
+
+# Follow logs in real-time
+docker compose logs -f camel-consumer
+```
+
+## Testing the Complete Flow
+
+### 1. Insert test data into PostgreSQL
+```bash
+docker exec -it kafka-nestjs-trial-db-1 psql -U postgres -c \
+  "INSERT INTO users (name, email) VALUES ('John Doe', 'john@example.com');"
+```
+
+### 2. Check if message was sent to Kafka
+```bash
+# View messages in AKHQ
+open http://localhost:8080
+
+# Or use command line
+docker exec kafka-nestjs-trial-broker-1 kafka-console-consumer \
+  --bootstrap-server localhost:9092 --topic postgres-users --from-beginning
+```
+
+### 3. Verify Camel consumer processed the message
+```bash
+# Check output files
+tail -f camel-output/*.txt
 ```
 
 ## Requirements
@@ -233,6 +336,8 @@ docker compose logs kconnect
 - pnpm
 - Docker and Docker Compose
 - Git (for cloning and version control)
+- Java 17+ (for Camel consumer development)
+- Maven 3.8+ (for building Camel consumer)
 
 ## Contributing
 
@@ -244,4 +349,4 @@ docker compose logs kconnect
 
 ---
 
-Made with ❤️ using NestJS, Apache Kafka, and PostgreSQL.
+Made with ❤️ using NestJS, Apache Kafka, Apache Camel, and PostgreSQL.
